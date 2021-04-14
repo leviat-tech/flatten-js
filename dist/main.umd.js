@@ -229,22 +229,15 @@
             this.last = last || this.first;
         }
 
-        /**
-         * Throw an error if circular loop detected in the linked list
-         * @param {LinkedListElement} first element to start iteration
-         * @throws {Flatten.Errors.INFINITE_LOOP}
-         */
-        static testInfiniteLoop(first) {
-            let edge = first;
-            let controlEdge = first;
-            do {
-                if (edge != first && edge === controlEdge) {
-                    throw Flatten.Errors.INFINITE_LOOP;  // new Error("Infinite loop")
+        [Symbol.iterator]() {
+            let value = undefined;
+            return {
+                next: () => {
+                    value = value ? value.next : this.first;
+                    return {value: value, done: value === undefined};
                 }
-                edge = edge.next;
-                controlEdge = controlEdge.next.next;
-            } while (edge != first)
-        }
+            };
+        };
 
         /**
          * Return number of elements in the list
@@ -369,15 +362,22 @@
             return this.first === undefined;
         }
 
-        [Symbol.iterator]() {
-            let value = undefined;
-            return {
-                next: () => {
-                    value = value ? value.next : this.first;
-                    return {value: value, done: value === undefined};
+        /**
+         * Throw an error if circular loop detected in the linked list
+         * @param {LinkedListElement} first element to start iteration
+         * @throws {Flatten.Errors.INFINITE_LOOP}
+         */
+        static testInfiniteLoop(first) {
+            let edge = first;
+            let controlEdge = first;
+            do {
+                if (edge != first && edge === controlEdge) {
+                    throw Flatten.Errors.INFINITE_LOOP;  // new Error("Infinite loop")
                 }
-            };
-        };
+                edge = edge.next;
+                controlEdge = controlEdge.next.next;
+            } while (edge != first)
+        }
     }
 
     /**
@@ -5779,7 +5779,11 @@
             let newStart = this.start.transform(matrix);
             let newEnd = this.end.transform(matrix);
             let newCenter = this.pc.transform(matrix);
-            let arc = Flatten.Arc.arcSE(newCenter, newStart, newEnd, this.counterClockwise);
+            let newDirection = this.counterClockwise;
+            if (matrix.a * matrix.d < 0) {
+              newDirection = !newDirection;
+            }
+            let arc = Flatten.Arc.arcSE(newCenter, newStart, newEnd, newDirection);
             return arc;
         }
 
