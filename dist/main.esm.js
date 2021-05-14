@@ -223,22 +223,15 @@ class LinkedList {
         this.last = last || this.first;
     }
 
-    /**
-     * Throw an error if circular loop detected in the linked list
-     * @param {LinkedListElement} first element to start iteration
-     * @throws {Flatten.Errors.INFINITE_LOOP}
-     */
-    static testInfiniteLoop(first) {
-        let edge = first;
-        let controlEdge = first;
-        do {
-            if (edge != first && edge === controlEdge) {
-                throw Flatten.Errors.INFINITE_LOOP;  // new Error("Infinite loop")
+    [Symbol.iterator]() {
+        let value = undefined;
+        return {
+            next: () => {
+                value = value ? value.next : this.first;
+                return {value: value, done: value === undefined};
             }
-            edge = edge.next;
-            controlEdge = controlEdge.next.next;
-        } while (edge != first)
-    }
+        };
+    };
 
     /**
      * Return number of elements in the list
@@ -363,15 +356,22 @@ class LinkedList {
         return this.first === undefined;
     }
 
-    [Symbol.iterator]() {
-        let value = undefined;
-        return {
-            next: () => {
-                value = value ? value.next : this.first;
-                return {value: value, done: value === undefined};
+    /**
+     * Throw an error if circular loop detected in the linked list
+     * @param {LinkedListElement} first element to start iteration
+     * @throws {Flatten.Errors.INFINITE_LOOP}
+     */
+    static testInfiniteLoop(first) {
+        let edge = first;
+        let controlEdge = first;
+        do {
+            if (edge != first && edge === controlEdge) {
+                throw Flatten.Errors.INFINITE_LOOP;  // new Error("Infinite loop")
             }
-        };
-    };
+            edge = edge.next;
+            controlEdge = controlEdge.next.next;
+        } while (edge != first)
+    }
 }
 
 /**
@@ -409,9 +409,7 @@ function unify(polygon1, polygon2) {
  * @returns {Polygon}
  */
 function subtract(polygon1, polygon2) {
-    let polygon2_tmp = polygon2.clone();
-    let polygon2_reversed = polygon2_tmp.reverse();
-    let [res_poly, wrk_poly] = booleanOpBinary(polygon1, polygon2_reversed, BOOLEAN_SUBTRACT, true);
+    let [res_poly, wrk_poly] = booleanOpBinary(polygon1, polygon2, BOOLEAN_SUBTRACT, true);
     return res_poly;
 }
 
@@ -555,6 +553,14 @@ function booleanOpBinary(polygon1, polygon2, op, restore)
 {
     let res_poly = polygon1.clone();
     let wrk_poly = polygon2.clone();
+
+    // Ensure polygons have uniform orientation
+    const first = res_poly.faces.values().next().value;
+    const second = wrk_poly.faces.values().next().value;
+    if (first && second && (first.orientation() !== second.orientation())) wrk_poly.reverse();
+
+    // Reverse polygon2 in the case of subtraction
+    if (op === 3) wrk_poly = wrk_poly.reverse();
 
     // get intersection points
     let intersections = getIntersections(res_poly, wrk_poly);
@@ -5773,7 +5779,11 @@ class Arc {
         let newStart = this.start.transform(matrix);
         let newEnd = this.end.transform(matrix);
         let newCenter = this.pc.transform(matrix);
-        let arc = Flatten.Arc.arcSE(newCenter, newStart, newEnd, this.counterClockwise);
+        let newDirection = this.counterClockwise;
+        if (matrix.a * matrix.d < 0) {
+          newDirection = !newDirection;
+        }
+        let arc = Flatten.Arc.arcSE(newCenter, newStart, newEnd, newDirection);
         return arc;
     }
 
