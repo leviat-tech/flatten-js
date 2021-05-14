@@ -40,9 +40,7 @@ export function unify(polygon1, polygon2) {
  * @returns {Polygon}
  */
 export function subtract(polygon1, polygon2) {
-    let polygon2_tmp = polygon2.clone();
-    let polygon2_reversed = polygon2_tmp.reverse();
-    let [res_poly, wrk_poly] = booleanOpBinary(polygon1, polygon2_reversed, BOOLEAN_SUBTRACT, true);
+    let [res_poly, wrk_poly] = booleanOpBinary(polygon1, polygon2, BOOLEAN_SUBTRACT, true);
     return res_poly;
 }
 
@@ -186,6 +184,14 @@ function booleanOpBinary(polygon1, polygon2, op, restore)
 {
     let res_poly = polygon1.clone();
     let wrk_poly = polygon2.clone();
+
+    // Ensure polygons have uniform orientation
+    const first = res_poly.faces.values().next().value;
+    const second = wrk_poly.faces.values().next().value;
+    if (first && second && (first.orientation() !== second.orientation())) wrk_poly.reverse();
+
+    // Reverse polygon2 in the case of subtraction
+    if (op === 3) wrk_poly = wrk_poly.reverse();
 
     // get intersection points
     let intersections = getIntersections(res_poly, wrk_poly);

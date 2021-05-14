@@ -204,6 +204,7 @@ describe('#Algorithms.Boolean Operations', function () {
             ]);
 
             let poly = unify(polygon1, polygon2);
+            console.log('size', poly.faces.size);
             expect(poly.faces.size).to.equal(2);
             let faces = [...poly.faces];
             expect(faces[0].size).to.equal(8);
@@ -253,6 +254,19 @@ describe('#Algorithms.Boolean Operations', function () {
             expect([...poly.faces][1].size).to.equal(3);
             expect([...poly.faces][1].orientation()).to.equal(Flatten.ORIENTATION.CCW);
             expect(poly.edges.size).to.equal(11);
+        });
+        it('Can perform unify. 2 polygons wound in opposite directions', function () {
+            "use strict";
+
+            let polygon1 = new Polygon();
+            polygon1.addFace([point(0, 0), point(10, 0), point(10, 10), point(0, 10)]);
+
+            let polygon2 = new Polygon();
+            polygon2.addFace([point(8, 2), point(8, 8), point(20, 8), point(20, 2)]);
+
+            let poly = unify(polygon1, polygon2);
+            expect(poly.faces.size).to.equal(1);
+            expect([...poly.faces][0].svg()).to.eql('\nM10,2 L20,2 L20,8 L10,8 L10,10 L0,10 L0,0 L10,0 L10,2 z');
         });
         it('Can perform unify. Infinite loop for boolean union over (valid) polygons. Issue #53', function () {
             "use strict";
@@ -803,7 +817,7 @@ describe('#Algorithms.Boolean Operations', function () {
             const reducedAreas = subtract(poly, cutter);
 
             expect(reducedAreas.faces.size).to.equal(1);
-            expect(reducedAreas.edges.size).to.equal(7);
+            expect(reducedAreas.edges.size).to.equal(4);
         });
         it('Can perform intersection. Issue #55 case 0', function () {
             "use strict";
