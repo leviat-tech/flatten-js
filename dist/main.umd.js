@@ -561,9 +561,28 @@
         let wrk_poly = polygon2.clone();
 
         // Ensure polygons have uniform orientation
-        const first = res_poly.faces.values().next().value;
-        const second = wrk_poly.faces.values().next().value;
-        if (first && second && (first.orientation() !== second.orientation())) wrk_poly.reverse();
+        const res_iterator = res_poly.faces.values();
+        const first = res_iterator.next().value;
+        const orientation = first
+            ? first.orientation()
+            : Flatten.ORIENTATION.CCW;
+        
+        let i = 0;
+        for (let face of res_poly.faces) {
+            if (i === 0) continue;
+            if (face.orientation() === orientation) face.reverse();
+            i++;
+        }
+
+        i = 0;
+        for (let face of wrk_poly.faces) {
+            if (i === 0) {
+                if (face.orientation() !== orientation) face.reverse();
+                continue;
+            }
+            if (face.orientation() === orientation) face.reverse();
+            i++;
+        }
 
         // Reverse polygon2 in the case of subtraction
         if (op === 3) wrk_poly = wrk_poly.reverse();
